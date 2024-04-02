@@ -13,7 +13,7 @@
 #endif
 
  /* Number of possible TWI addresses. */
- #define TWI_ADDRESSES      0x7F
+ #define TWI_ADDRESSES      127
 
 /* TWI instance. */
 static const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
@@ -22,7 +22,7 @@ static const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
 /**
  * @brief TWI initialization.
  */
-void twi_init (void)
+ret_code_t twi_init(void)
 {
     ret_code_t err_code;
 
@@ -35,9 +35,11 @@ void twi_init (void)
     };
 
     err_code = nrf_drv_twi_init(&m_twi, &twi_config, NULL, NULL);
-    APP_ERROR_CHECK(err_code);
+    if (err_code != NRF_SUCCESS) {
+        printf("Error initializing TWI. Error code: 0x%x\r\n", err_code);
+    }
 
-    nrf_drv_twi_enable(&m_twi);
+    return err_code;
 }
 
 
@@ -55,24 +57,37 @@ int main(void)
 
    printf("TWI scanner started loop.\r\n");
     
-    twi_init();
-
-    for (address = 1; address <= TWI_ADDRESSES; address++)
+   // Initialize TWI
+    err_code = twi_init();
+    if (err_code != NRF_SUCCESS)
     {
-        err_code = nrf_drv_twi_rx(&m_twi, address, &sample_data, sizeof(sample_data));
-        if (err_code == NRF_SUCCESS)
-        {
-            detected_device = true;
-            printf("TWI device detected at address 0x%x.\n", address );
-        }
-       
+        printf("Error initializing TWI. Error code: 0x%x\r\n", err_code);
+        return 1;
     }
 
-    if (!detected_device)
+   for (address = 1; address <= TWI_ADDRESSES; address++)
+{
+    err_code = nrf_drv_twi_rx(&m_twi, address, &sample_data, sizeof(sample_data));
+    if (err_code == NRF_SUCCESS)
     {
-        printf("No device was found.\r\n");
-        
+        detected_device = true;
+        printf("TWI device detected at address 0x%x.\n", address);
     }
+    else if (err_code == NRF_ERROR_NOT_FOUND)
+    {
+        // No device found at this address, continue scanning
+    }
+    else
+    {
+        // Some other error occurred, handle it as needed
+        printf("Error scanning address 0x%x, error code: 0x%x\n", address, err_code);
+    }
+}
+
+if (!detected_device)
+{
+    printf("No device was found.\r\n");
+}
 
     while (true)
     {
