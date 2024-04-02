@@ -13,7 +13,7 @@
 #endif
 
  /* Number of possible TWI addresses. */
- #define TWI_ADDRESSES      127
+ #define TWI_ADDRESSES      0x7F
 
 /* TWI instance. */
 static const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
@@ -79,7 +79,7 @@ int main(void)
         
    printf("TWI scanner started.\r\n");
     
-    twi_init();
+    
 
     for (address = 1; address <= TWI_ADDRESSES; address++)
     {
